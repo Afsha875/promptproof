@@ -1,0 +1,27 @@
+# A REAL failure this tool caught, kept as a demonstration.
+#
+# llama3.1:8b, asked to extract email addresses verbatim, silently
+# NORMALIZES spelled-out addresses: "jane dot doe at acme dot io" comes back
+# as "jane.doe@acme.io" — an address the user never wrote. In a compliance
+# or CRM pipeline that is data fabrication.
+#
+# Expected result: the case FAILS (exit code 1). That's the point.
+provider: ollama
+model: llama3.1:8b
+temperature: 0.0
+samples: 3
+pass_rate: 1.0
+
+prompts:
+  extract_email_verbatim:
+    system: >-
+      Extract the email address from the user's text.
+      Reply with only the email address exactly as written, and nothing else.
+      If there is no email address written in standard form, reply with
+      exactly NONE.
+    cases:
+      - name: spelled-out-address-must-not-be-invented
+        input: "My address is jane dot doe at acme dot io"
+        assert:
+          - type: not_contains
+            value: "@"
