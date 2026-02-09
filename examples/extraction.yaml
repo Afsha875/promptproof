@@ -1,0 +1,59 @@
+# Real-world example: guard extraction/classification prompts against
+# regressions when you swap models or edit wording.
+# Run:  promptproof examples/extraction.yaml --junit results.xml
+provider: ollama
+model: llama3.1:8b
+temperature: 0.0
+samples: 3        # nondeterminism is real — measure it
+pass_rate: 1.0    # all samples must pass for a case to pass
+
+prompts:
+  extract_email:
+    system: >-
+      Extract the email address from the user's text.
+      Reply with only the email address and nothing else.
+      If there is no email address, reply with exactly NONE.
+    cases:
+      - name: simple
+        input: "You can reach Jane at jane@acme.io after Tuesday."
+        assert:
+          - type: equals
+            value: jane@acme.io
+            case_sensitive: false
+      - name: no-email-present
+        input: "Call me on my office line tomorrow morning."
+        assert:
+          - type: equals
+            value: NONE
+
+  classify_sentiment:
+    system: >-
+      Classify the sentiment of the user's text.
+      Reply with exactly one lowercase word: positive, negative, or neutral.
+    cases:
+      - name: clearly-negative
+        input: "The product arrived broken and support ignored my emails for weeks."
+        assert:
+          - type: equals
+            value: negative
+      - name: clearly-positive
+        input: "Absolutely love it — setup took two minutes and it just works."
+        assert:
+          - type: equals
+            value: positive
+
+  structured_person:
+    system: >-
+      Extract the person described into JSON with exactly two keys:
+      "name" (string) and "year" (integer birth year). Reply with only JSON.
+    cases:
+      - name: ada
+        input: "Ada Lovelace, the first programmer, was born in 1815."
+        assert:
+          - type: json_valid
+          - type: json_field
+            path: name
+            value: Ada Lovelace
+          - type: json_field
+            path: year
+            value: 1815
